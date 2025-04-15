@@ -53,8 +53,9 @@ target_sources(${PRJ_APP_NAME}
 # libraries used by this application
 target_link_libraries(${PRJ_APP_NAME}
 	PRIVATE
-		SDL3::SDL3 # SDL3 Library
-		glm::glm   # GL Math Library
+		SDL3::SDL3         # SDL3 Library
+		SDL3_ttf::SDL3_ttf # SDL3 TTF library
+		glm::glm           # GL Math Library
 )
 
 # shaders used by this project

@@ -24,10 +24,14 @@ export namespace sdl
 		{
 			auto result = SDL_Init(SDL_INIT_VIDEO);
 			assert(result and "SDL could not be initialized.");
+
+			result = TTF_Init();
+			assert(result and "SDL TTF could not be initialized.");
 		}
 
 		~sdl_base()
 		{
+			TTF_Quit();
 			SDL_Quit();
 		}
 	};
