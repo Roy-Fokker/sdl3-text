@@ -17,6 +17,21 @@ export namespace sdl
 #endif
 	};
 
+	class sdl_base
+	{
+	public:
+		sdl_base()
+		{
+			auto result = SDL_Init(SDL_INIT_VIDEO);
+			assert(result and "SDL could not be initialized.");
+		}
+
+		~sdl_base()
+		{
+			SDL_Quit();
+		}
+	};
+
 	namespace type
 	{
 		// Deleter template, for use with SDL objects.
