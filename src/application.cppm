@@ -221,6 +221,10 @@ void application::prepare_scene()
 	scn.clear_color = { 0.2f, 0.2f, 0.4f, 1.0f };
 
 	scn.basic_pipeline = make_pipeline(gpu.get(), wnd.get());
+
+	auto text_engine = sdl::make_ttf_textengine(gpu.get());
+	auto font        = sdl::make_ttf_font("c:/windows/fonts/NotoSans-Regular.ttf", false);
+	auto txt         = sdl::make_ttf_text(text_engine.get(), font.get(), "Hello World!");
 }
 
 void application::update_state()
