@@ -51,6 +51,11 @@ export namespace sdl
 		// Define SDL type with std::unique_ptr and custom deleter
 		using window_ptr = std::unique_ptr<SDL_Window, sdl_deleter<SDL_DestroyWindow>>;
 
+		// Define SDL TTF types with std::unique_ptr and custom deleter
+		using ttf_font_ptr       = std::unique_ptr<TTF_Font, sdl_deleter<TTF_CloseFont>>;
+		using ttf_textengine_ptr = std::unique_ptr<TTF_TextEngine, sdl_deleter<TTF_DestroyGPUTextEngine>>;
+		using ttf_text_ptr       = std::unique_ptr<TTF_Text, sdl_deleter<TTF_DestroyText>>;
+
 		// Special deleter for gpu.
 		// it will release window on destruction
 		struct gpu_window_deleter
@@ -88,6 +93,33 @@ export namespace sdl
 		using gpu_texture_ptr    = std::unique_ptr<SDL_GPUTexture, free_gpu_texture>;
 		using free_gpu_sampler   = gpu_deleter<SDL_ReleaseGPUSampler>;
 		using gfx_sampler_ptr    = std::unique_ptr<SDL_GPUSampler, free_gpu_sampler>;
+	}
+
+	auto make_ttf_font(const std::filesystem::path &ttf_font_file, bool use_sdf) -> type::ttf_font_ptr
+	{
+		auto font = TTF_OpenFont(ttf_font_file.string().c_str(), 50);
+		assert(font != nullptr and "Failed to open font file");
+
+		TTF_SetFontSDF(font, use_sdf);
+		TTF_SetFontWrapAlignment(font, TTF_HORIZONTAL_ALIGN_CENTER);
+
+		return type::ttf_font_ptr{ font };
+	}
+
+	auto make_ttf_textengine(SDL_GPUDevice *gpu) -> type::ttf_textengine_ptr
+	{
+		auto engine = TTF_CreateGPUTextEngine(gpu);
+		assert(engine != nullptr and "Failed to create GPU TTF Text Engine");
+
+		return type::ttf_textengine_ptr{ engine };
+	}
+
+	auto make_ttf_text(TTF_TextEngine *engine, TTF_Font *font, const std::string_view text) -> type::ttf_text_ptr
+	{
+		auto txt = TTF_CreateText(engine, font, text.data(), text.size());
+		assert(txt != nullptr and "Failed to create TTF text object");
+
+		return type::ttf_text_ptr{ txt };
 	}
 
 	auto make_window(uint32_t width, uint32_t height, std::string_view title, SDL_WindowFlags flags = {}) -> type::window_ptr
