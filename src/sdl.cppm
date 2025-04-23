@@ -17,6 +17,8 @@ export namespace sdl
 #endif
 	};
 
+	constexpr auto MAX_ANISOTROPY = float{ 16 };
+
 	class sdl_base
 	{
 	public:
@@ -154,6 +156,24 @@ export namespace sdl
 		assert(sc_tex != nullptr and "Swapchain texture is null. Is window minimized?");
 
 		return sc_tex;
+	}
+
+	auto make_gpu_buffer(SDL_GPUDevice *gpu, SDL_GPUBufferUsageFlags usage, uint32_t size, std::string_view debug_name) -> type::gpu_buffer_ptr
+	{
+		auto buffer_info = SDL_GPUBufferCreateInfo{
+			.usage = usage,
+			.size  = size,
+		};
+
+		auto buffer = SDL_CreateGPUBuffer(gpu, &buffer_info);
+		assert(buffer != nullptr and "Failed to create gpu buffer");
+
+		if (IS_DEBUG and debug_name.size() > 0)
+		{
+			SDL_SetGPUBufferName(gpu, buffer, debug_name.data());
+		}
+
+		return { buffer, { gpu } };
 	}
 
 	enum class shader_stage : uint8_t
@@ -483,4 +503,100 @@ export namespace sdl
 		}
 	};
 
+	enum class sampler_type : uint8_t
+	{
+		point_clamp,
+		point_wrap,
+		linear_clamp,
+		linear_wrap,
+		anisotropic_clamp,
+		anisotropic_wrap,
+	};
+
+	auto to_sdl(sampler_type type) -> SDL_GPUSamplerCreateInfo
+	{
+		switch (type)
+		{
+			using enum sampler_type;
+		case point_clamp:
+			return {
+				.min_filter        = SDL_GPU_FILTER_NEAREST,
+				.mag_filter        = SDL_GPU_FILTER_NEAREST,
+				.mipmap_mode       = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,
+				.address_mode_u    = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+				.address_mode_v    = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+				.address_mode_w    = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+				.max_anisotropy    = 0,
+				.enable_anisotropy = false,
+			};
+		case point_wrap:
+			return {
+				.min_filter        = SDL_GPU_FILTER_NEAREST,
+				.mag_filter        = SDL_GPU_FILTER_NEAREST,
+				.mipmap_mode       = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,
+				.address_mode_u    = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
+				.address_mode_v    = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
+				.address_mode_w    = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
+				.max_anisotropy    = 0,
+				.enable_anisotropy = false,
+			};
+		case linear_clamp:
+			return {
+				.min_filter        = SDL_GPU_FILTER_LINEAR,
+				.mag_filter        = SDL_GPU_FILTER_LINEAR,
+				.mipmap_mode       = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
+				.address_mode_u    = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+				.address_mode_v    = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+				.address_mode_w    = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+				.max_anisotropy    = 0,
+				.enable_anisotropy = false,
+			};
+		case linear_wrap:
+			return {
+				.min_filter        = SDL_GPU_FILTER_LINEAR,
+				.mag_filter        = SDL_GPU_FILTER_LINEAR,
+				.mipmap_mode       = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
+				.address_mode_u    = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
+				.address_mode_v    = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
+				.address_mode_w    = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
+				.max_anisotropy    = 0,
+				.enable_anisotropy = false,
+			};
+		case anisotropic_clamp:
+			return {
+				.min_filter        = SDL_GPU_FILTER_LINEAR,
+				.mag_filter        = SDL_GPU_FILTER_LINEAR,
+				.mipmap_mode       = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
+				.address_mode_u    = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+				.address_mode_v    = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+				.address_mode_w    = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+				.max_anisotropy    = MAX_ANISOTROPY,
+				.enable_anisotropy = true,
+			};
+		case anisotropic_wrap:
+			return {
+				.min_filter        = SDL_GPU_FILTER_LINEAR,
+				.mag_filter        = SDL_GPU_FILTER_LINEAR,
+				.mipmap_mode       = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
+				.address_mode_u    = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
+				.address_mode_v    = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
+				.address_mode_w    = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
+				.max_anisotropy    = MAX_ANISOTROPY,
+				.enable_anisotropy = true,
+			};
+		}
+
+		assert(false and "Unhandled Sampler mode.");
+		return {};
+	}
+
+	auto make_sampler(SDL_GPUDevice *gpu, sampler_type type) -> type::gfx_sampler_ptr
+	{
+		auto sampler_info = to_sdl(type);
+
+		auto sampler = SDL_CreateGPUSampler(gpu, &sampler_info);
+		assert(sampler != nullptr and "Failed to create sampler.");
+
+		return { sampler, { gpu } };
+	}
 }
