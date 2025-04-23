@@ -106,10 +106,18 @@ using namespace sdl::type;
 
 namespace
 {
+	// Structures to hold geometry data
 	struct vertex
 	{
 		glm::vec3 pos;
-		glm::vec4 clr;
+		glm::vec2 uv;
+		glm::vec4 color;
+	};
+
+	struct mesh
+	{
+		std::vector<vertex> vertices;
+		std::vector<uint32_t> indices;
 	};
 
 	auto make_pipeline(SDL_GPUDevice *gpu, SDL_Window *wnd) -> gfx_pipeline_ptr
@@ -130,13 +138,19 @@ namespace
 			   .location    = 0,
 			   .buffer_slot = 0,
 			   .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-			   .offset      = 0,
+			   .offset      = offsetof(vertex, vertex::pos),
             },
             VA{
 			   .location    = 1,
 			   .buffer_slot = 0,
+			   .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+			   .offset      = offsetof(vertex, vertex::uv),
+            },
+            VA{
+			   .location    = 2,
+			   .buffer_slot = 0,
 			   .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
-			   .offset      = sizeof(glm::vec3),
+			   .offset      = offsetof(vertex, vertex::color),
             },
 		};
 

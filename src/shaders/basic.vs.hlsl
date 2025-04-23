@@ -3,7 +3,8 @@ struct Input
 	// Position is using TEXCOORD semantic because of rules imposed by SDL
 	// Per https://wiki.libsdl.org/SDL3/SDL_CreateGPUShader#remarks
 	float3 Position : TEXCOORD0; 
-	float4 Color : TEXCOORD1;
+	float2 UV : TEXCOORD1;
+	float4 Color : TEXCOORD2;
 };
 
 struct Output
