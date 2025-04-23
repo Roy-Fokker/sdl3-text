@@ -84,6 +84,12 @@ export namespace project
 		{
 			SDL_FColor clear_color;
 			st::gfx_pipeline_ptr basic_pipeline;
+			st::gpu_buffer_ptr vertex_buffer;
+			uint32_t vertex_count;
+			st::gpu_buffer_ptr index_buffer;
+			uint32_t index_count;
+			st::gpu_texture_ptr uv_texture;
+			st::gfx_sampler_ptr uv_sampler;
 		};
 
 		// Private members
@@ -228,9 +234,16 @@ void application::handle_sdl_input()
 
 void application::prepare_scene()
 {
-	scn.clear_color = { 0.2f, 0.2f, 0.4f, 1.0f };
+	auto gpu_ = gpu.get();
 
-	scn.basic_pipeline = make_pipeline(gpu.get(), wnd.get());
+	scn.clear_color    = { 0.2f, 0.2f, 0.4f, 1.0f };
+	scn.basic_pipeline = make_pipeline(gpu_, wnd.get());
+
+	constexpr auto MAX_VERTEX_COUNT = 4000u;
+	constexpr auto MAX_INDEX_COUNT  = 6000u;
+
+	scn.vertex_buffer = sdl::make_gpu_buffer(gpu_, SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertex) * MAX_VERTEX_COUNT, "Vertex Buffer");
+	scn.index_buffer  = sdl::make_gpu_buffer(gpu_, SDL_GPU_BUFFERUSAGE_INDEX, sizeof(uint32_t) * MAX_INDEX_COUNT, "Index buffer");
 
 	auto text_engine = sdl::make_ttf_textengine(gpu.get());
 	auto font        = sdl::make_ttf_font("c:/windows/fonts/NotoSans-Regular.ttf", false);
