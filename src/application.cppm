@@ -42,11 +42,7 @@ export namespace project
 
 			std::println("GPU Driver API: {}", SDL_GetGPUDeviceDriver(gpu.get()));
 		}
-		~application()
-		{
-			gpu = {};
-			wnd = {};
-		}
+		~application() = default;
 
 		auto run() -> int
 		{
@@ -92,8 +88,8 @@ export namespace project
 
 		// Private members
 		sdl::sdl_base base{}; // to handle init and quit for SDL
-		st::gpu_ptr gpu    = nullptr;
 		st::window_ptr wnd = nullptr;
+		st::gpu_ptr gpu    = nullptr;
 
 		clock clk = {};
 
