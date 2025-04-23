@@ -45,7 +45,46 @@ Uses following libraries retrieved from their project repos by CPM.CMake
 ## Basic notes on code structure
 - As much as is possible, functions will not take ownership of pointers to objects.
 - Where able, all SDL GPU types are wrapped into std::unique_ptr with custom deleters, so they self clean on destruction.
-- TODO: more notes to be added as, I think of them.
+
+### Function flow
+- main
+  - Application Init
+    - SDL init
+    - TTF init
+    - Window create
+    - GPU create
+    - High Resolution Clock
+  - Application Run
+    - Scene Init
+      - Set Clear Colour
+      - Create Pipeline
+        - Load Vertex Shader
+        - Load Fragment/Pixel Shader
+        - Set Vertex Attributes
+        - Set Vertex Buffer Descriptions
+        - Build Pipeline
+      - Create TTF GPU Text Engine
+      - Create TTF Font
+      - Create TTF Text run with Text Engine and Font
+    - Loop
+      - Handle SDL events
+        - Handle Keyboard and Mouse Inputs
+      - Update Application State
+      - Draw
+        - Acquire GPU Command Buffer
+        - Acquire Next swapchain image
+        - Create Color Target
+        - Begin GPU Render Pass
+          - TODO: sequence of functions in renderpass
+        - End GPU Render Pass
+        - Submit Command Buffer
+      - Clock Tick
+    - Clean/Destroy Scene
+  - Application Stop
+    - Destroy GPU
+    - Destroy Window
+    - TTF Quit
+    - SDL Quit
 
 ## references
 - Building on linux with Clang and libc++ for module support, https://mattbolitho.github.io/posts/vcpkg-with-libcxx/
