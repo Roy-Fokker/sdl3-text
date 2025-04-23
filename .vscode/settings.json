@@ -8,4 +8,5 @@
 	"C_Cpp.codeAnalysis.exclude": {
 		".cache/**": true
 	},
+	"C_Cpp.copilotHover": "disabled",
 }
