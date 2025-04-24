@@ -90,6 +90,12 @@ export namespace project
 			uint32_t index_count;
 			st::gpu_texture_ptr uv_texture;
 			st::gfx_sampler_ptr uv_sampler;
+
+			struct uniform_data
+			{
+				glm::mat4 projection;
+			};
+			uniform_data proj_view;
 		};
 
 		// Private members
@@ -130,10 +136,10 @@ namespace
 	{
 		return {
 			.vertices = {
-			  { { +0.5f, +0.5f, 0.0f }, { 1.f, 0.f }, { 1.f, 0.f, 0.f, 1.f } },
-			  { { -0.5f, +0.5f, 0.0f }, { 0.f, 0.f }, { 0.f, 1.f, 0.f, 1.f } },
-			  { { -0.5f, -0.5f, 0.0f }, { 0.f, 1.f }, { 0.f, 0.f, 1.f, 1.f } },
-			  { { +0.5f, -0.5f, 0.0f }, { 1.f, 1.f }, { 1.f, 1.f, 0.f, 1.f } },
+			  { { +0.5f, +0.5f, 1.f }, { 1.f, 0.f }, { 1.f, 0.f, 0.f, 1.f } },
+			  { { -0.5f, +0.5f, 1.f }, { 0.f, 0.f }, { 0.f, 1.f, 0.f, 1.f } },
+			  { { -0.5f, -0.5f, 1.f }, { 0.f, 1.f }, { 0.f, 0.f, 1.f, 1.f } },
+			  { { +0.5f, -0.5f, 1.f }, { 1.f, 1.f }, { 1.f, 1.f, 0.f, 1.f } },
 			},
 			.indices = {
 			  0, 1, 2, // tri 1
@@ -146,8 +152,9 @@ namespace
 	auto make_pipeline(SDL_GPUDevice *gpu, SDL_Window *wnd) -> gfx_pipeline_ptr
 	{
 		auto vs_shdr = shader_builder{
-			.shader_binary = io::read_file("shaders/basic.vs_6_4.cso"),
-			.stage         = shader_stage::vertex,
+			.shader_binary        = io::read_file("shaders/basic.vs_6_4.cso"),
+			.stage                = shader_stage::vertex,
+			.uniform_buffer_count = 1,
 		};
 
 		auto ps_shdr = shader_builder{
@@ -311,6 +318,13 @@ void application::prepare_scene()
 	scn.vertex_count = static_cast<uint32_t>(sqr_mesh.vertices.size());
 	upload_to_gpu(gpu_, io::as_byte_span(sqr_mesh.indices), scn.index_buffer.get());
 	scn.index_count = static_cast<uint32_t>(sqr_mesh.indices.size());
+
+	constexpr float fovy         = glm::radians(90.f);
+	constexpr float aspect_ratio = 5.f / 4.f;
+	constexpr float near_plane   = 0.1f;
+	constexpr float far_plane    = 100.f;
+
+	scn.proj_view.projection = glm::perspective(fovy, aspect_ratio, near_plane, far_plane);
 }
 
 void application::update_state()
@@ -323,6 +337,10 @@ void application::draw()
 	assert(cmd_buf != nullptr and "Failed to acquire command buffer.");
 
 	auto sc_img = sdl::next_swapchain_image(wnd.get(), cmd_buf);
+
+	// Push Uniform buffer
+	auto uniform_data = io::as_byte_span(scn.proj_view);
+	SDL_PushGPUVertexUniformData(cmd_buf, 0, uniform_data.data(), static_cast<uint32_t>(uniform_data.size()));
 
 	auto color_target = SDL_GPUColorTargetInfo{
 		.texture     = sc_img,

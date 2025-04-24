@@ -13,10 +13,19 @@ struct Output
 	float4 Position : SV_Position;
 };
 
+struct Push_Data
+{
+	float4x4 projection;
+};
+ConstantBuffer<Push_Data> ubo : register(b0, space1);
+
 Output main(Input input)
 {
 	Output output;
 	output.Color = input.Color;
-	output.Position = float4(input.Position, 1.0f);
+	
+	float4 pos = float4(input.Position, 1.0f);
+	output.Position = mul(ubo.projection, pos);
+	
 	return output;
 }
