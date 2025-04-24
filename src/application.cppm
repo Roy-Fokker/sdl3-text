@@ -98,8 +98,9 @@ export namespace project
 			struct uniform_data
 			{
 				glm::mat4 projection;
+				glm::mat4 model;
 			};
-			uniform_data proj_view;
+			uniform_data mvp;
 		};
 
 		// Private members
@@ -119,6 +120,9 @@ export namespace project
 using namespace project;
 using namespace sdl;
 using namespace sdl::type;
+
+namespace rg = std::ranges;
+namespace vw = std::views;
 
 namespace
 {
@@ -152,6 +156,45 @@ namespace
 		};
 	}
 
+	auto text_to_mesh(TTF_Text *text) -> mesh
+	{
+		auto sequence = TTF_GetGPUTextDrawData(text);
+		assert(sequence->next == nullptr and "Multiple text sequences. Need to handle differently.");
+
+		auto msh = mesh{};
+
+		msh.vertices.resize(sequence->num_vertices);
+		for (auto i = 0; i < sequence->num_vertices; i++)
+		{
+			msh.vertices[i] = {
+				.pos = {
+				  sequence->xy[i].x,
+				  sequence->xy[i].y,
+				  0.f,
+				},
+				.uv = {
+				  sequence->uv[i].x,
+				  sequence->uv[i].y,
+				},
+				.color = { 1.f, 0.f, 1.f, 1.f },
+			};
+		}
+
+		msh.indices.resize(sequence->num_indices);
+		std::memcpy(msh.indices.data(),
+		            sequence->indices,
+		            sizeof(uint32_t) * sequence->num_indices);
+
+		return msh;
+	}
+
+	auto get_text_atlas(TTF_Text *text) -> SDL_GPUTexture *
+	{
+		auto sequence = TTF_GetGPUTextDrawData(text);
+		assert(sequence->next == nullptr and "Multiple text sequences. Need to handle differently.");
+
+		return sequence->atlas_texture;
+	}
 
 	auto make_pipeline(SDL_GPUDevice *gpu, SDL_Window *wnd) -> gfx_pipeline_ptr
 	{
@@ -337,7 +380,13 @@ void application::prepare_scene()
 	constexpr float near_plane   = 0.1f;
 	constexpr float far_plane    = 100.f;
 
-	scn.proj_view.projection = glm::perspective(fovy, aspect_ratio, near_plane, far_plane);
+	scn.mvp.projection = glm::perspective(fovy, aspect_ratio, near_plane, far_plane);
+
+	auto &model = scn.mvp.model;
+
+	model = glm::identity<glm::mat4>();
+	model = glm::translate(model, { 0.f, 0.f, 80.f });
+	model = glm::scale(model, { 0.3f, 0.3f, 0.3f });
 }
 
 void application::update_state()
@@ -352,7 +401,7 @@ void application::draw()
 	auto sc_img = sdl::next_swapchain_image(wnd.get(), cmd_buf);
 
 	// Push Uniform buffer
-	auto uniform_data = io::as_byte_span(scn.proj_view);
+	auto uniform_data = io::as_byte_span(scn.mvp);
 	SDL_PushGPUVertexUniformData(cmd_buf, 0, uniform_data.data(), static_cast<uint32_t>(uniform_data.size()));
 
 	auto color_target = SDL_GPUColorTargetInfo{
