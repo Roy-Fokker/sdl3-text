@@ -126,6 +126,23 @@ namespace
 		std::vector<uint32_t> indices;
 	};
 
+	auto make_square() -> mesh
+	{
+		return {
+			.vertices = {
+			  { { +0.5f, +0.5f, 0.0f }, { 1.f, 0.f }, { 1.f, 0.f, 0.f, 1.f } },
+			  { { -0.5f, +0.5f, 0.0f }, { 0.f, 0.f }, { 0.f, 1.f, 0.f, 1.f } },
+			  { { -0.5f, -0.5f, 0.0f }, { 0.f, 1.f }, { 0.f, 0.f, 1.f, 1.f } },
+			  { { +0.5f, -0.5f, 0.0f }, { 1.f, 1.f }, { 1.f, 1.f, 0.f, 1.f } },
+			},
+			.indices = {
+			  0, 1, 2, // tri 1
+			  2, 3, 0, // tri 2
+			},
+		};
+	}
+
+
 	auto make_pipeline(SDL_GPUDevice *gpu, SDL_Window *wnd) -> gfx_pipeline_ptr
 	{
 		auto vs_shdr = shader_builder{
@@ -175,13 +192,52 @@ namespace
 			.vertex_attributes          = va,
 			.vertex_buffer_descriptions = vbd,
 			.color_format               = SDL_GetGPUSwapchainTextureFormat(gpu, wnd),
-			.enable_depth_stencil       = true,
+			.enable_depth_stencil       = false,
 			.raster                     = raster_type::none_fill,
 			.blend                      = blend_type::none,
 			.topology                   = topology_type::triangle_list,
 		};
 
 		return pl.build(gpu);
+	}
+
+	void upload_to_gpu(SDL_GPUDevice *gpu, io::byte_span src_data, SDL_GPUBuffer *dst_buffer)
+	{
+		auto src_size = static_cast<uint32_t>(src_data.size());
+		assert(src_size > 0 and "Source data size is 0.");
+
+		auto transfer_info = SDL_GPUTransferBufferCreateInfo{
+			.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+			.size  = src_size,
+		};
+		auto transfer_buffer = SDL_CreateGPUTransferBuffer(gpu, &transfer_info);
+		assert(transfer_buffer != nullptr and "Failed to create transfer buffer.");
+
+		auto dst_data = SDL_MapGPUTransferBuffer(gpu, transfer_buffer, false);
+		std::memcpy(dst_data, src_data.data(), src_size);
+		SDL_UnmapGPUTransferBuffer(gpu, transfer_buffer);
+
+		auto copy_cmd = SDL_AcquireGPUCommandBuffer(gpu);
+		{
+			auto copy_pass = SDL_BeginGPUCopyPass(copy_cmd);
+			{
+				auto src = SDL_GPUTransferBufferLocation{
+					.transfer_buffer = transfer_buffer,
+					.offset          = 0,
+				};
+
+				auto dst = SDL_GPUBufferRegion{
+					.buffer = dst_buffer,
+					.offset = 0,
+					.size   = src_size,
+				};
+
+				SDL_UploadToGPUBuffer(copy_pass, &src, &dst, false);
+			}
+			SDL_EndGPUCopyPass(copy_pass);
+			SDL_SubmitGPUCommandBuffer(copy_cmd);
+		}
+		SDL_ReleaseGPUTransferBuffer(gpu, transfer_buffer);
 	}
 }
 
@@ -248,6 +304,13 @@ void application::prepare_scene()
 	auto text_engine = sdl::make_ttf_textengine(gpu.get());
 	auto font        = sdl::make_ttf_font("c:/windows/fonts/NotoSans-Regular.ttf", false);
 	auto txt         = sdl::make_ttf_text(text_engine.get(), font.get(), "Hello World!");
+
+	auto sqr_mesh = make_square();
+
+	upload_to_gpu(gpu_, io::as_byte_span(sqr_mesh.vertices), scn.vertex_buffer.get());
+	scn.vertex_count = static_cast<uint32_t>(sqr_mesh.vertices.size());
+	upload_to_gpu(gpu_, io::as_byte_span(sqr_mesh.indices), scn.index_buffer.get());
+	scn.index_count = static_cast<uint32_t>(sqr_mesh.indices.size());
 }
 
 void application::update_state()
@@ -270,6 +333,24 @@ void application::draw()
 
 	auto render_pass = SDL_BeginGPURenderPass(cmd_buf, &color_target, 1, nullptr);
 	{
+		SDL_BindGPUGraphicsPipeline(render_pass, scn.basic_pipeline.get());
+
+		auto vertex_bindings = std::array{
+			SDL_GPUBufferBinding{
+			  .buffer = scn.vertex_buffer.get(),
+			  .offset = 0,
+			},
+		};
+		SDL_BindGPUVertexBuffers(render_pass, 0, vertex_bindings.data(), static_cast<uint32_t>(vertex_bindings.size()));
+
+		auto index_binding = SDL_GPUBufferBinding{
+			.buffer = scn.index_buffer.get(),
+			.offset = 0,
+		};
+		SDL_BindGPUIndexBuffer(render_pass, &index_binding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+
+
+		SDL_DrawGPUIndexedPrimitives(render_pass, scn.index_count, 1, 0, 0, 0);
 	}
 	SDL_EndGPURenderPass(render_pass);
 	SDL_SubmitGPUCommandBuffer(cmd_buf);
