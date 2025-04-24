@@ -217,59 +217,60 @@ export namespace sdl
 	{
 		switch (type)
 		{
-		case raster_type::none_fill:
+			using enum raster_type;
+		case none_fill:
 			return {
 				.fill_mode = SDL_GPU_FILLMODE_FILL,
 				.cull_mode = SDL_GPU_CULLMODE_NONE,
 			};
-		case raster_type::none_wire:
+		case none_wire:
 			return {
 				.fill_mode = SDL_GPU_FILLMODE_LINE,
 				.cull_mode = SDL_GPU_CULLMODE_NONE,
 			};
-		case raster_type::front_ccw_fill:
+		case front_ccw_fill:
 			return {
 				.fill_mode  = SDL_GPU_FILLMODE_FILL,
 				.cull_mode  = SDL_GPU_CULLMODE_FRONT,
 				.front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,
 			};
-		case raster_type::front_ccw_wire:
+		case front_ccw_wire:
 			return {
 				.fill_mode  = SDL_GPU_FILLMODE_LINE,
 				.cull_mode  = SDL_GPU_CULLMODE_FRONT,
 				.front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,
 			};
-		case raster_type::back_ccw_fill:
+		case back_ccw_fill:
 			return {
 				.fill_mode  = SDL_GPU_FILLMODE_FILL,
 				.cull_mode  = SDL_GPU_CULLMODE_BACK,
 				.front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,
 			};
-		case raster_type::back_ccw_wire:
+		case back_ccw_wire:
 			return {
 				.fill_mode  = SDL_GPU_FILLMODE_LINE,
 				.cull_mode  = SDL_GPU_CULLMODE_BACK,
 				.front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,
 			};
-		case raster_type::front_cw_fill:
+		case front_cw_fill:
 			return {
 				.fill_mode  = SDL_GPU_FILLMODE_FILL,
 				.cull_mode  = SDL_GPU_CULLMODE_FRONT,
 				.front_face = SDL_GPU_FRONTFACE_CLOCKWISE,
 			};
-		case raster_type::front_cw_wire:
+		case front_cw_wire:
 			return {
 				.fill_mode  = SDL_GPU_FILLMODE_LINE,
 				.cull_mode  = SDL_GPU_CULLMODE_FRONT,
 				.front_face = SDL_GPU_FRONTFACE_CLOCKWISE,
 			};
-		case raster_type::back_cw_fill:
+		case back_cw_fill:
 			return {
 				.fill_mode  = SDL_GPU_FILLMODE_FILL,
 				.cull_mode  = SDL_GPU_CULLMODE_BACK,
 				.front_face = SDL_GPU_FRONTFACE_CLOCKWISE,
 			};
-		case raster_type::back_cw_wire:
+		case back_cw_wire:
 			return {
 				.fill_mode  = SDL_GPU_FILLMODE_LINE,
 				.cull_mode  = SDL_GPU_CULLMODE_BACK,
@@ -300,19 +301,20 @@ export namespace sdl
 
 		switch (type)
 		{
-		case blend_type::opaque:
+			using enum blend_type;
+		case opaque:
 			src = SDL_GPU_BLENDFACTOR_ONE;
 			dst = SDL_GPU_BLENDFACTOR_ZERO;
 			break;
-		case blend_type::alpha:
+		case alpha:
 			src = SDL_GPU_BLENDFACTOR_ONE;
 			dst = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 			break;
-		case blend_type::additive:
+		case additive:
 			src = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
 			dst = SDL_GPU_BLENDFACTOR_ONE;
 			break;
-		case blend_type::non_premultiplied:
+		case non_premultiplied:
 			src = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
 			dst = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 			break;
@@ -415,15 +417,16 @@ export namespace sdl
 	{
 		switch (type)
 		{
-		case topology_type::triangle_list:
+			using enum topology_type;
+		case triangle_list:
 			return SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
-		case topology_type::triangle_strip:
+		case triangle_strip:
 			return SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP;
-		case topology_type::line_list:
+		case line_list:
 			return SDL_GPU_PRIMITIVETYPE_LINELIST;
-		case topology_type::line_strip:
+		case line_strip:
 			return SDL_GPU_PRIMITIVETYPE_LINESTRIP;
-		case topology_type::point_list:
+		case point_list:
 			return SDL_GPU_PRIMITIVETYPE_POINTLIST;
 		}
 		assert(false and "Unhandled topology type");
