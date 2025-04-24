@@ -82,14 +82,18 @@ export namespace project
 		// Structure to hold scene objects
 		struct scene
 		{
+			st::ttf_text_ptr text;
+			st::ttf_font_ptr font;
+			st::ttf_textengine_ptr text_engine;
+
 			SDL_FColor clear_color;
 			st::gfx_pipeline_ptr basic_pipeline;
 			st::gpu_buffer_ptr vertex_buffer;
 			uint32_t vertex_count;
 			st::gpu_buffer_ptr index_buffer;
 			uint32_t index_count;
-			st::gpu_texture_ptr uv_texture;
-			st::gfx_sampler_ptr uv_sampler;
+			SDL_GPUTexture *text_atlas;
+			st::gfx_sampler_ptr text_sampler;
 
 			struct uniform_data
 			{
@@ -160,6 +164,7 @@ namespace
 		auto ps_shdr = shader_builder{
 			.shader_binary = io::read_file("shaders/basic.ps_6_4.cso"),
 			.stage         = shader_stage::fragment,
+			.sampler_count = 1,
 		};
 
 		using VA = SDL_GPUVertexAttribute;
@@ -201,7 +206,7 @@ namespace
 			.color_format               = SDL_GetGPUSwapchainTextureFormat(gpu, wnd),
 			.enable_depth_stencil       = false,
 			.raster                     = raster_type::none_fill,
-			.blend                      = blend_type::none,
+			.blend                      = blend_type::non_premultiplied,
 			.topology                   = topology_type::triangle_list,
 		};
 
@@ -308,16 +313,24 @@ void application::prepare_scene()
 	scn.vertex_buffer = sdl::make_gpu_buffer(gpu_, SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertex) * MAX_VERTEX_COUNT, "Vertex Buffer");
 	scn.index_buffer  = sdl::make_gpu_buffer(gpu_, SDL_GPU_BUFFERUSAGE_INDEX, sizeof(uint32_t) * MAX_INDEX_COUNT, "Index buffer");
 
-	auto text_engine = sdl::make_ttf_textengine(gpu_);
-	auto font        = sdl::make_ttf_font("c:/windows/fonts/NotoSans-Regular.ttf", false);
-	auto txt         = sdl::make_ttf_text(text_engine.get(), font.get(), "Hello World!");
+	scn.text_engine = sdl::make_ttf_textengine(gpu_);
+	scn.font        = sdl::make_ttf_font("c:/windows/fonts/NotoSans-Regular.ttf", false);
+	scn.text        = sdl::make_ttf_text(scn.text_engine.get(), scn.font.get(), "Hello World!");
 
-	auto sqr_mesh = make_square();
+	// auto sqr_mesh = make_square();
+	// upload_to_gpu(gpu_, io::as_byte_span(sqr_mesh.vertices), scn.vertex_buffer.get());
+	// scn.vertex_count = static_cast<uint32_t>(sqr_mesh.vertices.size());
+	// upload_to_gpu(gpu_, io::as_byte_span(sqr_mesh.indices), scn.index_buffer.get());
+	// scn.index_count = static_cast<uint32_t>(sqr_mesh.indices.size());
 
-	upload_to_gpu(gpu_, io::as_byte_span(sqr_mesh.vertices), scn.vertex_buffer.get());
-	scn.vertex_count = static_cast<uint32_t>(sqr_mesh.vertices.size());
-	upload_to_gpu(gpu_, io::as_byte_span(sqr_mesh.indices), scn.index_buffer.get());
-	scn.index_count = static_cast<uint32_t>(sqr_mesh.indices.size());
+	auto txt      = scn.text.get();
+	auto txt_mesh = text_to_mesh(txt);
+	upload_to_gpu(gpu_, io::as_byte_span(txt_mesh.vertices), scn.vertex_buffer.get());
+	scn.vertex_count = static_cast<uint32_t>(txt_mesh.vertices.size());
+	upload_to_gpu(gpu_, io::as_byte_span(txt_mesh.indices), scn.index_buffer.get());
+	scn.index_count  = static_cast<uint32_t>(txt_mesh.indices.size());
+	scn.text_atlas   = get_text_atlas(txt);
+	scn.text_sampler = sdl::make_sampler(gpu_, sampler_type::linear_clamp);
 
 	constexpr float fovy         = glm::radians(90.f);
 	constexpr float aspect_ratio = 5.f / 4.f;
@@ -367,6 +380,11 @@ void application::draw()
 		};
 		SDL_BindGPUIndexBuffer(render_pass, &index_binding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
+		auto sampler_binding = SDL_GPUTextureSamplerBinding{
+			.texture = scn.text_atlas,
+			.sampler = scn.text_sampler.get(),
+		};
+		SDL_BindGPUFragmentSamplers(render_pass, 0, &sampler_binding, 1);
 
 		SDL_DrawGPUIndexedPrimitives(render_pass, scn.index_count, 1, 0, 0, 0);
 	}
