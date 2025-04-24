@@ -66,7 +66,10 @@ Uses following libraries retrieved from their project repos by CPM.CMake
       - Create TTF GPU Text Engine
       - Create TTF Font
       - Create TTF Text run with Text Engine and Font
-    - Loop
+      - Get Text mesh and texture from TTF Text
+      - Create Perspective projection matrix
+      - Create Text mesh transform matrix
+    - Loop till quit event
       - Handle SDL events
         - Handle Keyboard and Mouse Inputs
       - Update Application State
@@ -75,7 +78,10 @@ Uses following libraries retrieved from their project repos by CPM.CMake
         - Acquire Next swapchain image
         - Create Color Target
         - Begin GPU Render Pass
-          - TODO: sequence of functions in renderpass
+          - Bind Pipeline
+          - Bind Vertex and Index buffers
+          - Bind Texture and Sampler
+          - Draw Indexed Primitives
         - End GPU Render Pass
         - Submit Command Buffer
       - Clock Tick

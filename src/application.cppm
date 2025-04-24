@@ -82,6 +82,7 @@ export namespace project
 		// Structure to hold scene objects
 		struct scene
 		{
+			// TODO: Init order is off, not sure why it's opposite of what i think it should be.
 			st::ttf_text_ptr text;
 			st::ttf_font_ptr font;
 			st::ttf_textengine_ptr text_engine;
