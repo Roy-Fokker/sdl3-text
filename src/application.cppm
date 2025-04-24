@@ -301,7 +301,7 @@ void application::prepare_scene()
 	scn.vertex_buffer = sdl::make_gpu_buffer(gpu_, SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertex) * MAX_VERTEX_COUNT, "Vertex Buffer");
 	scn.index_buffer  = sdl::make_gpu_buffer(gpu_, SDL_GPU_BUFFERUSAGE_INDEX, sizeof(uint32_t) * MAX_INDEX_COUNT, "Index buffer");
 
-	auto text_engine = sdl::make_ttf_textengine(gpu.get());
+	auto text_engine = sdl::make_ttf_textengine(gpu_);
 	auto font        = sdl::make_ttf_font("c:/windows/fonts/NotoSans-Regular.ttf", false);
 	auto txt         = sdl::make_ttf_text(text_engine.get(), font.get(), "Hello World!");
 
